@@ -1,0 +1,1 @@
+luajit -l import/init -e "import('Math', 'Table', 'system'); print, _print = system.print, print" -i
