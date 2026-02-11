@@ -23,14 +23,31 @@ cd luarocks-$LUAROCKS_VERSION
 sudo luarocks install luasocket
 sudo luarocks install luasec
 
+
+if [ -f "/usr/local/lib/libluajit-5.1.so" ] || [ -f "/usr/local/lib/libluajit-5.1.so.2" ]; then
+    LUAJIT_LIB_DIR="/usr/local/lib"
+    LUAJIT_INCLUDE_DIR="/usr/local/include/luajit-2.1"
+elif [ -f "/usr/lib/libluajit-5.1.so" ] || [ -f "/usr/lib/libluajit-5.1.so.2" ]; then
+    LUAJIT_LIB_DIR="/usr/lib"
+    LUAJIT_INCLUDE_DIR="/usr/include/luajit-2.1"
+else
+    echo "No se encontró LuaJIT en /usr/local/lib ni en /usr/lib"
+    exit 1
+fi
+
+echo "LuaJIT detectado en: $LUAJIT_LIB_DIR"
+
 cd /tmp
 if [ -d lua-ssh/ ]; then
-    rm -rf lua-ssh/;
+    rm -rf lua-ssh/
 fi
+
 git clone https://github.com/esno/lua-ssh.git
 cd lua-ssh/src
-gcc -O2 -fPIC -I/usr/local/include/luajit-2.1 -c ssh.c -o ssh.o
-gcc -shared -o ssh.so ssh.o -lssh2
+
+gcc -O2 -fPIC -I$LUAJIT_INCLUDE_DIR -c ssh.c -o ssh.o
+gcc -shared -o ssh.so ssh.o -L$LUAJIT_LIB_DIR -lluajit-5.1 -lssh2
+
 cp -p ssh.so $BASE_PATH/import/Linux/
 
 echo "OK"
