@@ -25,7 +25,7 @@ function EnumValueMT.__index(self, index)
 end
 
 --local fcmd = ((jit and jit.os == "Linux" or os.getenv("HOME")) and io.popen("ls -A ./daemons/Enum")) or ((jit and jit.os == "Windows") or not os.getenv("HOME")) and io.popen("dir /B .\\daemons\\Enum\\")
-local fcmd = (((jit and jit.os == "Windows") or not os.getenv("HOME")) and io.popen("dir /B .\\daemons\\Enum\\")) or io.popen("ls -A ./daemons/Enum")
+local fcmd = (((jit and jit.os == "Windows") or not os.getenv("HOME")) and io.popen("dir /B .\\import\\Enum\\")) or io.popen("ls -A ./import/Enum")
 local scmd = fcmd:read("*all")
 fcmd:close()
 
