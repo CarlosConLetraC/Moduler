@@ -49,4 +49,24 @@ gcc -shared -o ssh.so ssh.o -lluajit-5.1 -lssh2
 mkdir -p "$BASE_PATH/import/Linux/"
 cp -p ssh.so "$BASE_PATH/import/Linux/"
 
+if command -v java &>/dev/null; then
+    echo "Maquina virtual de Java encontrada."
+    java -version
+else
+    echo "Java no instalado. Instalando JDK 25. . ."
+
+    cd /tmp
+
+    JDK_DEB="jdk-25_linux-x64_bin.deb"
+    JDK_URL="https://download.oracle.com/java/25/latest/jdk-25_linux-x64_bin.deb"
+
+    wget -q -O "$JDK_DEB" "$JDK_URL"
+
+    sudo dpkg -i "$JDK_DEB" || sudo apt-get -f install -y
+    rm -f "$JDK_DEB"
+
+    echo "Java instalado correctamente."
+    java -version
+fi
+
 echo "OK"
