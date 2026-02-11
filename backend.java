@@ -61,8 +61,8 @@ public class backend {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(scriptsDir, "program*.lua")) {
             for (Path script : stream) {
-                lua_State luaTask = new lua_State(script);
-                Thread t = new Thread(luaTask);
+                lua_State L = new lua_State(script);
+                Thread t = new Thread(L);
                 t.start();
                 threads.add(t);
             }
