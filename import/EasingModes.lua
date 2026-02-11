@@ -95,11 +95,11 @@ EasingModes[Enum.StyleMode.Quad] = {
 
 EasingModes[Enum.StyleMode.Sine] = {
 	[Enum.EaseMode.In] = function(t)
-		return 1 - math_cos((t * math.pi) / 2)
+		return 1 - math_cos((t * math_pi) / 2)
 	end,
 
 	[Enum.EaseMode.Out] = function(t)
-		return math_sin((t * math.pi) / 2)
+		return math_sin((t * math_pi) / 2)
 	end,
 
 	[Enum.EaseMode.InOut] = function(t)
