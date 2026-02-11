@@ -23,7 +23,7 @@ dependencies=(
 sudo apt-get update
 for dep in "${dependencies[@]}"; do
     if ! dpkg -s "$dep" &>/dev/null; then
-        echo "$dep no está instalado. Instalando..."
+        echo "$dep no instalado. Instalando..."
         sudo apt-get install -y "$dep"
     fi
 done
