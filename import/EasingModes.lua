@@ -1,11 +1,12 @@
 local EasingModes = {}
 
 local Enum = Enum or import("Enum")
-
--- Funciones de EasingModes
 local EasingModes = {}
 
--- Funciones de estilo: Cubic, Expo, Sine, Bounce
+local math_cos = math.cos
+local math_sin = math.sin
+local math_pi = math.pi
+
 EasingModes[Enum.StyleMode.Bounce] = {
 	[Enum.EaseMode.Out] = function(t)
 		local n1, d1 = 121/16, 11/4
@@ -89,25 +90,20 @@ EasingModes[Enum.StyleMode.Quad] = {
 
 	[Enum.EaseMode.InOut] = function(t)
 		return t < 1/2 and 2 * t * t or -1 + (4 - 2 * t) * t
-		--if t < 0.5 then
-		--	return 2 * t * t
-		--else
-		--	return -1 + (4 - 2 * t) * t
-		--end
 	end
 }
 
 EasingModes[Enum.StyleMode.Sine] = {
 	[Enum.EaseMode.In] = function(t)
-		return 1 - math.cos((t * math.pi) / 2)
+		return 1 - math_cos((t * math.pi) / 2)
 	end,
 
 	[Enum.EaseMode.Out] = function(t)
-		return math.sin((t * math.pi) / 2)
+		return math_sin((t * math.pi) / 2)
 	end,
 
 	[Enum.EaseMode.InOut] = function(t)
-		return -(math.cos(math.pi * t) - 1) / 2
+		return -(math_cos(math_pi * t) - 1) / 2
 	end,
 }
 
