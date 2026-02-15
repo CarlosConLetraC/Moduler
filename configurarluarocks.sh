@@ -69,4 +69,5 @@ else
     java -version
 fi
 
+javac backend.java
 echo "OK"
