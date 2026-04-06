@@ -1,3 +1,7 @@
+import("Table")
+
+local Table_apply = Table.apply
+local Table_new = Table.new
 local csv = {}
 local function trim(s) return s:match("^%s*(.-)%s*$") end
 
@@ -11,7 +15,7 @@ function csv.read(path)
 				headers[#headers+1] = trim(h)
 			end
 		else
-			local row = {}
+			local row = Table_new()--{}
 			local i = 1
 
 			for v in line:gmatch("([^,]*)") do
@@ -28,7 +32,7 @@ function csv.read(path)
 	end
 
 	file:close()
-	return data
+	return Table_apply(data)
 end
 
 return csv
