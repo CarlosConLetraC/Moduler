@@ -5,8 +5,7 @@ import seaborn as sns
 
 df = pd.read_csv("data/train.csv")
 numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-if "log_price" in numeric_cols:
-    numeric_cols.remove("log_price")
+if "log_price" in numeric_cols: numeric_cols.remove("log_price")
 
 for col in numeric_cols + ["log_price"]:
     plt.figure(figsize=(6, 4))
