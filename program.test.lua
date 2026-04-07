@@ -1,6 +1,6 @@
 import("Table", "system", "csv")
 
-local f = system.wgetdownload("https://www.openml.org/data/get_csv/16826755/phpMYEkMl", true)
+local f = system.curldownload("https://www.openml.org/data/get_csv/16826755/phpMYEkMl", true)
 local t = csv.read(f)
 
 for k, v in t.iter do
