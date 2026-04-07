@@ -13,7 +13,5 @@ if ! pgrep -x "mongod" > /dev/null; then
 fi
 
 java backend
-./runclient merge.lua
 source $PWD/entorno/bin/activate
-# python3 innecesario.py
-# python3 graficar.py > py.log 2>&1
+python airbnb.py > airbnb.py.log 2>&1
