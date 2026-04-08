@@ -65,7 +65,7 @@ function fileMT.__index.write(self, src, ignoreNewLine)
 	local nsrc = modes.source[tsrc.source]
 	
 	if nsrc > 1 then
-		self.source = self.source .. tostring(src) .. (not ignoreNewLine and "\n" or "")
+		self.source = self.source .. tostring(src) .. (not ignoreNewLine and "" or "\n")
 		if self.autosave then return self:save() and self.source end
 		return self.source
 	end
