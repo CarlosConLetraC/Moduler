@@ -1,6 +1,7 @@
 *.class
 *.log
 data/*.csv
+data/stats.json
 entorno/
 build/
 plots/
