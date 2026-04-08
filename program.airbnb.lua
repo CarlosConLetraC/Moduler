@@ -3,7 +3,7 @@ import("Table", "system", "csv", "File", "json")
 local function mean(t)
     local s, n = 0, 0
     for _, v in t.iter do s = s + v; n = n + 1 end
-    return s / n
+    return n > 0 and s / n or 0
 end
 
 local function median(t)
@@ -17,7 +17,7 @@ local function stddev(t)
     local m = mean(t)
     local sum, n = 0, 0
     for _, v in t.iter do sum = sum + (v-m)^2; n = n+1 end
-    return math.sqrt(sum / (n-1))
+    return n > 1 and math.sqrt(sum / (n-1)) or 0
 end
 
 local function minmax(t)
@@ -32,13 +32,13 @@ end
 local function corr(x, y)
     local xs, ys = {}, {}
 
-    for i = 1, math.min(x:len(), y:len()) do
-        local vx = x[i]
-        local vy = y[i]
+    for i = 1, math.min(x:len(), y:len()), 1 do
+        local vx = tonumber(x[i])
+        local vy = tonumber(y[i])
 
         if vx ~= nil and vy ~= nil then
-            xs[#xs+1] = vx
-            ys[#ys+1] = vy
+            table.insert(xs, vx)
+            table.insert(ys, vy)
         end
     end
 
@@ -54,7 +54,7 @@ local function corr(x, y)
     mean_y = mean_y / n
 
     local num, dx, dy = 0, 0, 0
-    for i = 1, n do
+    for i = 1, n, 1 do
         local vx = xs[i]
         local vy = ys[i]
 
@@ -83,13 +83,8 @@ for _, row in t_rows.iteri do
 end
 
 local target = Table.create(t.log_price:len(), function(i)
-    return tonumber(t.log_price[i]) or 0
-end, "tailcall")
---local target = {}
---for i = 1, t.log_price:len(), 1 do
---    target[i] = tonumber(t.log_price[i]) or 0
---end
---Table.apply(target)
+    return tonumber(t.log_price[i])
+end, "xtailcall")
 
 local stats = Table.new()
 local correlations = Table.new()
@@ -98,14 +93,6 @@ for col_name, col_data in t.iter do
     local numeric_col = Table.create(col_data:len(), function(i)
         return tonumber(col_data[i])
     end, "xtailcall")
-    --local numeric_col = Table.new()
-    --for i = 1, col_data:len(), 1 do
-    --    local v = tonumber(col_data[i])
-    --    if v ~= nil then
-    --        table.insert(numeric_col, v)
-    --        --numeric_col[#numeric_col+1] = v
-    --    end
-    --end
 
     if numeric_col:len() > 0 then
         local min_val, max_val = minmax(numeric_col)
@@ -117,7 +104,7 @@ for col_name, col_data in t.iter do
             max = max_val
         }
         if col_name ~= "log_price" then
-            correlations[col_name] = corr(target, numeric_col)
+            correlations[col_name] = corr(t.log_price, col_data)
         end
     end
 end
@@ -135,7 +122,6 @@ end
 
 local headers = {}
 for col_name, _ in t.iter do
-    --headers[rawlen(headers)+1] = col_name
     table.insert(headers, col_name)
 end
 local out_csv = io.open("data/processed.csv", "w")--File.new("data/processed.csv", "rw", true)
@@ -146,7 +132,6 @@ for i = 1, n_filas, 1 do
     local row = {}
     for _, col in ipairs(headers) do
         local val = t[col][i] or ""
-        --row[rawlen(row)+1] = tostring(val)
         table.insert(row, tostring(val))
     end
     out_csv:write(table.concat(row, ",") .. "\n")
