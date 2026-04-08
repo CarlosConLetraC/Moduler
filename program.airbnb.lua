@@ -228,7 +228,6 @@ out:write(json.encode({
 -- =========================
 
 local f = io.open("data/processed.csv", "w")
-
 f:write(table.concat(headers, ",") .. "\n")
 
 for i = 1, rows:len() do
@@ -244,5 +243,4 @@ for i = 1, rows:len() do
 end
 
 f:close()
-
 system.print("Pipeline completado correctamente")
