@@ -65,7 +65,7 @@ function fileMT.__index.write(self, src, ignoreNewLine)
 	local nsrc = modes.source[tsrc.source]
 	
 	if nsrc > 1 then
-		self.source = self.source .. tostring(src) .. (not ignoreNewLine and "" or "\n")
+		self.source = self.source .. tostring(src) .. (ignoreNewLine and "" or "\n")
 		if self.autosave then return self:save() and self.source end
 		return self.source
 	end
@@ -73,7 +73,7 @@ function fileMT.__index.write(self, src, ignoreNewLine)
 	error("Cannot write-file on " .. tsrc.source .. " mode.", 2)
 end
 
-function fileMT.__index.flush(self)
+function fileMT.__index.clear(self)
 	assert(typeof(self) == "file", "Instance self-invoke must inherit from type 'file'.")
 	local mt = getmetatable(self)
 	local tsrc = mt.__allow
@@ -84,6 +84,8 @@ function fileMT.__index.flush(self)
 		if self.autosave then return self:save() end
 		return true
 	end
+
+	return false, "read-only file"
 end
 
 function fileMT.__index.read(self)
@@ -106,7 +108,8 @@ function fileMT.__index.save(self)
 	local tsrc = mt.__allow
 	local nsrc = modes.source[tsrc.source]
 
-	return system.writefile(self.name, self.source, "wb+")
+	local ok, err = blund(system.writefile(self.name, self.source, "wb+"))
+	return true
 end
 
 function fileMT.__index.rename(self, newPath)
@@ -125,9 +128,7 @@ function fileMT.__index.appendLine(self, line)
 	blund(f, "Cannot open file.")
 
 	f:write(line .. "\n")
-	f:close()
-
-	return true
+	return f:close()
 end
 
 function fileMT.__index.appendLineSafe(self, line)
@@ -141,10 +142,10 @@ function fileMT.__index.appendLineSafe(self, line)
 	assert(f, "Cannot open file.")
 
 	f:write(line .. "\n")
-	f:close()
+	local a = f:close()
 
 	mt.__lock = false
-	return true
+	return a
 end
 
 function File.new(pathName, mode, autosave)
@@ -153,7 +154,7 @@ function File.new(pathName, mode, autosave)
 	mode = mode or "r"
 
 	newMT.__allow = {
-		["source"] = modes.source[mode] and mode
+		["source"] = blund(modes.source[mode] and mode, "File: invalid mode")
 	}
 	newMT.__index = setmetatable({
 		autosave = autosave == true,

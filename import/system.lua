@@ -17,10 +17,6 @@ local io_lines = io.lines
 --local io_read = io.read
 --local io_close = io.close
 
-local f_write = io.stdin.write
-local f_read = io.stdin.read
-local f_close = io.stdin.close
-
 local string_len = string.len
 local string_format = string.format
 local string_gsub = string.gsub
@@ -34,9 +30,7 @@ local table_concat = table.concat
 local table_insert = table.insert
 
 local debug_getinfo = debug.getinfo
-
 local tostring, select = tostring, select
-
 local Table_ftostring = (Table or import("Table")).ftostring
 
 function system.pack(...)
@@ -61,9 +55,9 @@ function system.warn(...)
 	local content = {}
 	for i = 1, t.n, 1 do
 		local s = Table_ftostring(t[i], true)
-		table_insert(content, table_concat{WARN_START_STR, s, WARN_STOP_STR, (i ~= t.n and '\t') or '\n'})
+		table_insert(content, table_concat{WARN_START_STR, s, WARN_STOP_STR, (i ~= t.n and '\t') or ''})
 	end
-	io_write(table_concat(content, "\n"), "\n")
+	io_write(table_concat(content, "\t"), "\n")
 end
 
 function system.printf(s, ...)
@@ -89,8 +83,8 @@ end
 function system.readfile(flName, mode)
 	local file, what = io_open(flName, mode or "rb")
 	if not file then return false, what end
-	local source = f_read(file, "*all")
-	f_close(file)
+	local source = file:read("*all")
+	file:close()
 
 	return source
 end
@@ -99,8 +93,8 @@ function system.writefile(Path, src, mode)
 	local file, what = io_open(Path, mode or "wb")
 	if not file then return false, what end
 
-	f_write(file, src)
-	return f_close(file)
+	file:write(src)
+	return file:close()
 end
 
 function system.rawlen(v)
@@ -166,8 +160,8 @@ function system.curldownload(url, useLocalFile)
 	local f = io_popen("curl -s \"".. url .."\"")
 	if useLocalFile == true then return f end
 	
-	local src = f_read(f, "*all")
-	f_close(f)
+	local src = f:read("*all")
+	f:close()
 	return src
 end
 
@@ -176,8 +170,8 @@ function system.wgetdownload(url, useLocalFile)
 	local f = io_popen("wget -qO- \"".. url .."\"")
 	if useLocalFile == true then return f end
 	
-	local src = f_read(f, "*all")
-	f_close(f)
+	local src = f:read("*all")
+	f:close(f)
 	return src
 end
 

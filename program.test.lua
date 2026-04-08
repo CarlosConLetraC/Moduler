@@ -1,4 +1,4 @@
-import("Table", "system", "csv")
+do return end; import("Table", "system", "csv")
 
 local f = system.curldownload("https://www.openml.org/data/get_csv/16826755/phpMYEkMl", true)
 local t = csv.read(f)

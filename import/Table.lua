@@ -966,7 +966,7 @@ end
 
 function ftypes.xtailcall(nt, size, fn, ...)
 	for i = 1, size, 1 do
-		table_insert(nt, fn(i, ...))
+		table_insert(nt, (fn(i, ...)))
 	end
 end
 

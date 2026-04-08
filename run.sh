@@ -41,4 +41,4 @@ fi
 
 java backend
 source $PWD/entorno/bin/activate
-python airbnb.py > airbnb.py.log 2>&1
+python airbnb.py #> airbnb.py.log 2>&1

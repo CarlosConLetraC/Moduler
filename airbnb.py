@@ -4,50 +4,87 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+#os.makedirs("plots", exist_ok=True)
 os.system("mkdir -p plots")
-df = pd.read_csv("data/processed.csv")
-numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-if "log_price" in numeric_cols: numeric_cols.remove("log_price")
 
-print("Generando histogramas. . .")
-for col in numeric_cols + ["log_price"]:
+df = pd.read_csv("data/processed.csv")
+df = df.apply(pd.to_numeric, errors="coerce")
+df = df.dropna(axis=1, how="all")
+def is_useful(col): return col.notna().sum() > 50 and col.nunique() > 1
+
+numeric_cols = [
+    col for col in df.columns
+    if pd.api.types.is_numeric_dtype(df[col]) and is_useful(df[col])
+]
+
+if "log_price" not in df.columns: raise ValueError("log_price no existe en el dataset")
+df["log_price"] = pd.to_numeric(df["log_price"], errors="coerce")
+cols_for_corr = [c for c in numeric_cols if c != "log_price"] + ["log_price"]
+corr_matrix = df[cols_for_corr].corr()
+if "log_price" not in corr_matrix: raise ValueError("log_price no pudo calcular correlación (demasiados NaN)")
+corr = corr_matrix["log_price"].dropna()
+corr = df[numeric_cols].corr()["log_price"].dropna()
+important_cols = corr[abs(corr) > 0.1].index.tolist()
+important_cols = [c for c in important_cols if c != "log_price"]
+
+print("Columnas importantes:", important_cols)
+
+print("\nGenerando histogramas...")
+for col in important_cols + ["log_price"]:
+    data = df[col].dropna()
+    if len(data) < 50: continue
+
     plt.figure(figsize=(6, 4))
-    sns.histplot(df[col].dropna(), bins=30, kde=True)
+    sns.histplot(data, bins=30, kde=True)
     plt.title(f"Histograma de {col}")
     plt.xlabel(col)
     plt.ylabel("Frecuencia")
     plt.tight_layout()
     plt.savefig(f"plots/hist_{col}.png")
-    print(f"plots/hist_{col}.png guardado. . .")
+    print(f"plots/hist_{col}.png guardado")
     plt.close()
 
-print("\nGenerando boxes. . .")
-for col in numeric_cols + ["log_price"]:
+print("\nGenerando boxplots...")
+for col in important_cols + ["log_price"]:
+    data = df[col].dropna()
+    if len(data) < 50: continue
+
     plt.figure(figsize=(6, 4))
-    sns.boxplot(x=df[col].dropna())
+    sns.boxplot(x=data)
     plt.title(f"Boxplot de {col}")
     plt.xlabel(col)
     plt.tight_layout()
     plt.savefig(f"plots/box_{col}.png")
-    print(f"plots/box_{col}.png guardado. . .")
+    print(f"plots/box_{col}.png guardado")
     plt.close()
 
-print("\nGenerando scatters. . .")
-for col in numeric_cols:
+print("\nGenerando scatter plots...")
+for col in important_cols:
+    valid = df[[col, "log_price"]].dropna()
+
+    if len(valid) < 50: continue
+
     plt.figure(figsize=(6, 4))
-    sns.scatterplot(x=df[col], y=df["log_price"])
+    sns.scatterplot(x=valid[col], y=valid["log_price"])
+    sns.regplot(x=valid[col], y=valid["log_price"], scatter=False, color="red")
+
     plt.title(f"{col} vs log_price")
     plt.xlabel(col)
     plt.ylabel("log_price")
     plt.tight_layout()
-    plt.savefig(f"plots/scatter_{col}_log_price.png")
-    print(f"plots/scatter_{col}_log_price.png guardado. . .")
+    plt.savefig(f"plots/scatter_{col}.png")
+    print(f"plots/scatter_{col}.png guardado")
     plt.close()
 
-plt.figure(figsize=(12, 10))
-corr_matrix = df[numeric_cols + ["log_price"]].corr()
-sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", cbar=True)
-plt.title("Mapa de calor de correlaciones")
+print("\nGenerando heatmap...")
+plt.figure(figsize=(10, 8))
+corr_matrix = df[important_cols + ["log_price"]].corr()
+sns.heatmap(corr_matrix, cmap="coolwarm", center=0, cbar=True)
+plt.title("Mapa de calor de correlaciones (filtrado)")
 plt.tight_layout()
 plt.savefig("plots/corr_heatmap.png")
 plt.close()
+
+print("\nTop correlaciones con log_price:")
+top = corr.abs().sort_values(ascending=False).head(10)
+print(top)

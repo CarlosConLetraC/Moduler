@@ -2,65 +2,83 @@ import("Table", "system", "csv", "File", "json")
 
 local function mean(t)
     local s, n = 0, 0
-    for _, v in t.iter do s = s + v; n = n + 1 end
+    for i = 1, t:len() do
+        local v = t[i]
+        if v ~= nil then
+            s = s + v
+            n = n + 1
+        end
+    end
     return n > 0 and s / n or 0
-end
-
-local function median(t)
-    local arr = Table.clone(t)--Table.create(t:len(), function(i) return t[i] end, "tailcall")
-    arr:sort()--Table.sort(arr)
-    local n = arr:len()
-    return n % 2 == 1 and arr[math.floor((n+1)/2)] or (arr[math.floor(n/2)] + arr[math.floor(n/2+1)])/2
 end
 
 local function stddev(t)
     local m = mean(t)
-    local sum, n = 0, 0
-    for _, v in t.iter do sum = sum + (v-m)^2; n = n+1 end
-    return n > 1 and math.sqrt(sum / (n-1)) or 0
+    local s, n = 0, 0
+
+    for i = 1, t:len() do
+        local v = t[i]
+        if v ~= nil then
+            s = s + (v - m)^2
+            n = n + 1
+        end
+    end
+
+    return n > 1 and math.sqrt(s / (n - 1)) or 0
 end
 
 local function minmax(t)
-    local min, max
-    for i, v in t.iteri do
-        if i == 1 then min, max = v, v
-        else min = math.min(min, v); max = math.max(max, v) end
+    local min_v, max_v = nil, nil
+
+    for i = 1, t:len() do
+        local v = t[i]
+        if v ~= nil then
+            if not min_v then
+                min_v, max_v = v, v
+            else
+                min_v = math.min(min_v, v)
+                max_v = math.max(max_v, v)
+            end
+        end
     end
-    return min, max
+
+    return min_v, max_v
 end
 
 local function corr(x, y)
     local xs, ys = {}, {}
 
-    for i = 1, math.min(x:len(), y:len()), 1 do
+    local n = math.min(x:len(), y:len())
+
+    for i = 1, n, 1 do
         local vx = tonumber(x[i])
         local vy = tonumber(y[i])
 
-        if vx ~= nil and vy ~= nil then
-            table.insert(xs, vx)
-            table.insert(ys, vy)
+        if vx and vy then
+            xs[#xs+1] = vx
+            ys[#ys+1] = vy
         end
     end
 
-    local n = #xs
-    if n <= 1 then return 0 end
+    local m = #xs
+    if m <= 1 then return 0 end
 
-    local mean_x, mean_y = 0, 0
-    for i = 1, n do
-        mean_x = mean_x + xs[i]
-        mean_y = mean_y + ys[i]
+    local mx, my = 0, 0
+    for i = 1, m, 1 do
+        mx = mx + xs[i]
+        my = my + ys[i]
     end
-    mean_x = mean_x / n
-    mean_y = mean_y / n
+    mx, my = mx / m, my / m
 
     local num, dx, dy = 0, 0, 0
-    for i = 1, n, 1 do
-        local vx = xs[i]
-        local vy = ys[i]
 
-        num = num + (vx - mean_x) * (vy - mean_y)
-        dx = dx + (vx - mean_x)^2
-        dy = dy + (vy - mean_y)^2
+    for i = 1, m, 1 do
+        local dxv = xs[i] - mx
+        local dyv = ys[i] - my
+
+        num = num + dxv * dyv
+        dx = dx + dxv^2
+        dy = dy + dyv^2
     end
 
     local denom = math.sqrt(dx * dy)
@@ -69,73 +87,186 @@ local function corr(x, y)
     return num / denom
 end
 
-local t_rows = csv.read("data/train.csv")
-local t = Table.new()
+local function is_id_column(name)
+    return string.find(name:lower(), "id") ~= nil
+end
 
-local t_count = 0
-for _, row in t_rows.iteri do
-    for k, v in row.iter do
-        if not t[k] then
-            t[k] = t[k] or Table.new()
+-- =========================
+-- 1. LOAD DATA
+-- =========================
+
+local rows = csv.read("data/train.csv")
+
+if not rows or rows:len() == 0 then
+    error("CSV vacío o inválido")
+end
+
+-- =========================
+-- 2. HEADERS
+-- =========================
+
+local headers = {}
+for k, _ in rows[1].iter do
+    table.insert(headers, k)
+end
+
+-- =========================
+-- 3. BUILD COLUMNS
+-- =========================
+
+local cols = Table.new()
+
+for i = 1, rows:len(), 1 do
+    local row = rows[i]
+
+    for j = 1, #headers, 1 do
+        local col = headers[j]
+
+        if not cols[col] then
+            cols[col] = Table.new()
         end
-        t[k][rawlen(t[k]) + 1] = v
+
+        table.insert(cols[col], row[col])
     end
 end
 
-local target = Table.create(t.log_price:len(), function(i)
-    return tonumber(t.log_price[i])
-end, "xtailcall")
+-- =========================
+-- 4. TARGET
+-- =========================
+
+local target = cols["log_price"]
+if not target then
+    error("Falta columna log_price en dataset")
+end
+
+-- =========================
+-- 5. FEATURE ENGINEERING SAFE FILTER
+-- =========================
+
+local function count_valid(t)
+    local c = 0
+    for i = 1, t:len(), 1 do
+        if t[i] ~= nil and tonumber(t[i]) ~= nil then
+            c = c + 1
+        end
+    end
+    return c
+end
 
 local stats = Table.new()
 local correlations = Table.new()
 
-for col_name, col_data in t.iter do
-    local numeric_col = Table.create(col_data:len(), function(i)
-        return tonumber(col_data[i])
-    end, "xtailcall")
+for _, col in ipairs(headers) do
+    local data = cols[col]
 
-    if numeric_col:len() > 0 then
-        local min_val, max_val = minmax(numeric_col)
-        stats[col_name] = {
-            mean = mean(numeric_col),
-            median = median(numeric_col),
-            std = stddev(numeric_col),
-            min = min_val,
-            max = max_val
+    local numeric = Table.create(data:len(), function(i)
+        return tonumber(data[i])
+    end, "tailcall")
+
+    local total = data:len()
+    local valid = count_valid(data)
+    local ratio = total > 0 and valid / total or 0
+
+    local variation = stddev(numeric)
+    local is_id = is_id_column(col)
+    local is_target = (col == "log_price")
+    if is_target or (ratio > 0.6 and variation > 0 and not is_id) then
+
+        local min_v, max_v = minmax(numeric)
+
+        stats[col] = {
+            mean = mean(numeric),
+            median = 0,
+            std = variation,
+            min = min_v,
+            max = max_v
         }
-        if col_name ~= "log_price" then
-            correlations[col_name] = corr(t.log_price, col_data)
+
+        if not is_target then
+            correlations[col] = corr(target, numeric)
         end
     end
 end
 
+local function feature_is_valid(col, numeric, raw)
+    local valid = 0
+    local total = raw:len()
+
+    for i = 1, total, 1 do
+        if numeric[i] ~= nil then
+            valid = valid + 1
+        end
+    end
+
+    local ratio = valid / total
+    local variation = stddev(numeric)
+
+    if ratio < 0.6 then return false end
+    if variation <= 0 then return false end
+    if is_id_column(col) then return false end
+    if col == "log_price" then return true end
+
+    return true
+end
+
+-- =========================
+-- 6. STATS + CORR
+-- =========================
+
+for _, col in ipairs(headers) do
+    local data = cols[col]
+
+    local numeric = Table.create(data:len(), function(i)
+        return tonumber(data[i])
+    end, "tailcall")
+
+    if feature_is_valid(col, numeric, data) then
+        local min_v, max_v = minmax(numeric)
+
+        stats[col] = {
+            mean = mean(numeric),
+            median = 0,
+            std = stddev(numeric),
+            min = min_v,
+            max = max_v
+        }
+
+        if col ~= "log_price" then
+            correlations[col] = corr(target, numeric)
+        end
+    end
+end
+
+-- =========================
+-- 7. OUTPUT JSON
+-- =========================
+
 local out = File.new("data/stats.json", "w", true)
-out:flush()
-out:write(json.encode({stats=stats, correlations=correlations}))
+out:clear()
 
-system.print("Variables con correlacion |r| > 0.5 con log_price:")
-for col, c in correlations.iter do
-    if math.abs(c) > 0.5 then
-        system.printf("%s -> correlacion: %.2f", col, c)
-    end
-end
+out:write(json.encode({
+    stats = stats,
+    correlations = correlations
+}))
 
-local headers = {}
-for col_name, _ in t.iter do
-    table.insert(headers, col_name)
-end
-local out_csv = io.open("data/processed.csv", "w")--File.new("data/processed.csv", "rw", true)
-out_csv:write(table.concat(headers, ",") .. "\n")
+-- =========================
+-- 8. EXPORT CLEAN CSV
+-- =========================
 
-local n_filas = rawlen(t[headers[1]])
-for i = 1, n_filas, 1 do
-    local row = {}
+local f = io.open("data/processed.csv", "w")
+f:write(table.concat(headers, ",") .. "\n")
+
+for i = 1, rows:len() do
+    local line = {}
+
     for _, col in ipairs(headers) do
-        local val = t[col][i] or ""
-        table.insert(row, tostring(val))
+        local v = rows[i][col]
+        if v == nil then v = "" end
+        line[#line + 1] = tostring(v)
     end
-    out_csv:write(table.concat(row, ",") .. "\n")
+
+    f:write(table.concat(line, ",") .. "\n")
 end
 
-system.print("Dataset procesado generado en data/processed.csv")
-system.print("Calculo de estadisticas completado. JSON generado en data/stats.json")
+f:close()
+system.print("Pipeline completado correctamente")
