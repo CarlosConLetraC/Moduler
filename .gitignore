@@ -3,4 +3,5 @@
 data/*.csv
 entorno/
 build/
+plots/
 .vscode/
