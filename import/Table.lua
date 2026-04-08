@@ -532,6 +532,8 @@ methods = {
 			mt.__len = __len
 			return size
 		end
+
+		return rawlen(self)
 	end,
 	pop = function(self, limit, ignore)
 		limit = (type(limit) == "number" and limit) or tonumber(limit) or tonumber(limit, 16) or rawlen(self)
@@ -959,6 +961,12 @@ end
 function ftypes.tailcall(nt, size, fn, ...)
 	for i = 1, size, 1 do
 		rawset(nt, i, fn(i, ...))
+	end
+end
+
+function ftypes.xtailcall(nt, size, fn, ...)
+	for i = 1, size, 1 do
+		table_insert(nt, fn(i, ...))
 	end
 end
 

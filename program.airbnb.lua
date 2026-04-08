@@ -7,10 +7,10 @@ local function mean(t)
 end
 
 local function median(t)
-    local arr = Table.create(t:len(), function(i) return t[i] end, "tailcall")
-    Table.sort(arr)
+    local arr = Table.clone(t)--Table.create(t:len(), function(i) return t[i] end, "tailcall")
+    arr:sort()--Table.sort(arr)
     local n = arr:len()
-    return n % 2 == 1 and arr[math.floor((n+1)/2)] or (arr[n/2] + arr[n/2+1])/2
+    return n % 2 == 1 and arr[math.floor((n+1)/2)] or (arr[math.floor(n/2)] + arr[math.floor(n/2+1)])/2
 end
 
 local function stddev(t)
@@ -30,57 +30,82 @@ local function minmax(t)
 end
 
 local function corr(x, y)
-    local n, mean_x, mean_y = 0, 0, 0
-    for i, vx in x.iteri do
-        if vy then
-            local vy = y[i]
-            mean_x = mean_x + vx
-            mean_y = mean_y + vy
-            n = n + 1
+    local xs, ys = {}, {}
+
+    for i = 1, math.min(x:len(), y:len()) do
+        local vx = x[i]
+        local vy = y[i]
+
+        if vx ~= nil and vy ~= nil then
+            xs[#xs+1] = vx
+            ys[#ys+1] = vy
         end
     end
-    mean_x = mean_x/n
-    mean_y = mean_y/n
-    local num, dx, dy = 0,0,0
-    for i, vx in x.iteri do
-        if vy then
-            local vy = y[i]
-            num = num + (vx-mean_x)*(vy-mean_y)
-            dx = dx + (vx-mean_x)^2
-            dy = dy + (vy-mean_y)^2
-        end
+
+    local n = #xs
+    if n <= 1 then return 0 end
+
+    local mean_x, mean_y = 0, 0
+    for i = 1, n do
+        mean_x = mean_x + xs[i]
+        mean_y = mean_y + ys[i]
     end
-    return num / math.sqrt(dx*dy)
+    mean_x = mean_x / n
+    mean_y = mean_y / n
+
+    local num, dx, dy = 0, 0, 0
+    for i = 1, n do
+        local vx = xs[i]
+        local vy = ys[i]
+
+        num = num + (vx - mean_x) * (vy - mean_y)
+        dx = dx + (vx - mean_x)^2
+        dy = dy + (vy - mean_y)^2
+    end
+
+    local denom = math.sqrt(dx * dy)
+    if denom == 0 then return 0 end
+
+    return num / denom
 end
 
 local t_rows = csv.read("data/train.csv")
 local t = Table.new()
 
-for _, row in ipairs(t_rows) do
-    for k,v in pairs(row) do
+local t_count = 0
+for _, row in t_rows.iteri do
+    for k, v in row.iter do
         if not t[k] then
-            t[k] = select(1, Table.new()) -- toma solo un valor para evitar error
+            t[k] = t[k] or Table.new()
         end
-        t[k][rawlen(t[k])+1] = v
+        t[k][rawlen(t[k]) + 1] = v
     end
 end
 
---local target = Table.create(t.log_price:len(), function(i)
---    return tonumber(t.log_price[i]) or 0
---end, "tailcall")
-local target = {}
-for i = 1, t.log_price:len(), 1 do
-    target[i] = tonumber(t.log_price[i]) or 0
-end
-Table.apply(target)
+local target = Table.create(t.log_price:len(), function(i)
+    return tonumber(t.log_price[i]) or 0
+end, "tailcall")
+--local target = {}
+--for i = 1, t.log_price:len(), 1 do
+--    target[i] = tonumber(t.log_price[i]) or 0
+--end
+--Table.apply(target)
 
 local stats = Table.new()
 local correlations = Table.new()
 
 for col_name, col_data in t.iter do
     local numeric_col = Table.create(col_data:len(), function(i)
-        return tonumber(col_data[i]) or 0
-    end, "tailcall")
+        return tonumber(col_data[i])
+    end, "xtailcall")
+    --local numeric_col = Table.new()
+    --for i = 1, col_data:len(), 1 do
+    --    local v = tonumber(col_data[i])
+    --    if v ~= nil then
+    --        table.insert(numeric_col, v)
+    --        --numeric_col[#numeric_col+1] = v
+    --    end
+    --end
 
     if numeric_col:len() > 0 then
         local min_val, max_val = minmax(numeric_col)
@@ -110,7 +135,8 @@ end
 
 local headers = {}
 for col_name, _ in t.iter do
-    headers[rawlen(headers)+1] = col_name
+    --headers[rawlen(headers)+1] = col_name
+    table.insert(headers, col_name)
 end
 local out_csv = io.open("data/processed.csv", "w")--File.new("data/processed.csv", "rw", true)
 out_csv:write(table.concat(headers, ",") .. "\n")
@@ -120,7 +146,8 @@ for i = 1, n_filas, 1 do
     local row = {}
     for _, col in ipairs(headers) do
         local val = t[col][i] or ""
-        row[rawlen(row)+1] = tostring(val)
+        --row[rawlen(row)+1] = tostring(val)
+        table.insert(row, tostring(val))
     end
     out_csv:write(table.concat(row, ",") .. "\n")
 end
