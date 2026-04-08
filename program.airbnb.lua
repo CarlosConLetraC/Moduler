@@ -1,15 +1,25 @@
 import("Table", "system", "csv", "File", "json")
 
+-- =========================
+-- SAFE NUMERIC UTILITIES
+-- =========================
+
+local function safe_number(v)
+    return tonumber(v)
+end
+
 local function mean(t)
     local s, n = 0, 0
+
     for i = 1, t:len() do
-        local v = t[i]
+        local v = tonumber(t[i])
         if v ~= nil then
             s = s + v
             n = n + 1
         end
     end
-    return n > 0 and s / n or 0
+
+    return n > 0 and (s / n) or 0
 end
 
 local function stddev(t)
@@ -17,9 +27,9 @@ local function stddev(t)
     local s, n = 0, 0
 
     for i = 1, t:len() do
-        local v = t[i]
+        local v = tonumber(t[i])
         if v ~= nil then
-            s = s + (v - m)^2
+            s = s + (v - m) ^ 2
             n = n + 1
         end
     end
@@ -31,7 +41,7 @@ local function minmax(t)
     local min_v, max_v = nil, nil
 
     for i = 1, t:len() do
-        local v = t[i]
+        local v = tonumber(t[i])
         if v ~= nil then
             if not min_v then
                 min_v, max_v = v, v
@@ -45,18 +55,22 @@ local function minmax(t)
     return min_v, max_v
 end
 
+-- =========================
+-- CORRELATION (SAFE ALIGNMENT)
+-- =========================
+
 local function corr(x, y)
-    local xs, ys = {}, {}
+    local xs, ys = {}
 
     local n = math.min(x:len(), y:len())
 
-    for i = 1, n, 1 do
+    for i = 1, n do
         local vx = tonumber(x[i])
         local vy = tonumber(y[i])
 
-        if vx and vy then
-            xs[#xs+1] = vx
-            ys[#ys+1] = vy
+        if vx ~= nil and vy ~= nil then
+            xs[#xs + 1] = vx
+            ys[#ys + 1] = vy
         end
     end
 
@@ -64,21 +78,23 @@ local function corr(x, y)
     if m <= 1 then return 0 end
 
     local mx, my = 0, 0
-    for i = 1, m, 1 do
+
+    for i = 1, m do
         mx = mx + xs[i]
         my = my + ys[i]
     end
+
     mx, my = mx / m, my / m
 
     local num, dx, dy = 0, 0, 0
 
-    for i = 1, m, 1 do
+    for i = 1, m do
         local dxv = xs[i] - mx
         local dyv = ys[i] - my
 
         num = num + dxv * dyv
-        dx = dx + dxv^2
-        dy = dy + dyv^2
+        dx = dx + dxv ^ 2
+        dy = dy + dyv ^ 2
     end
 
     local denom = math.sqrt(dx * dy)
@@ -87,12 +103,16 @@ local function corr(x, y)
     return num / denom
 end
 
+-- =========================
+-- ID DETECTOR
+-- =========================
+
 local function is_id_column(name)
     return string.find(name:lower(), "id") ~= nil
 end
 
 -- =========================
--- 1. LOAD DATA
+-- LOAD DATA
 -- =========================
 
 local rows = csv.read("data/train.csv")
@@ -102,7 +122,7 @@ if not rows or rows:len() == 0 then
 end
 
 -- =========================
--- 2. HEADERS
+-- HEADERS
 -- =========================
 
 local headers = {}
@@ -111,15 +131,15 @@ for k, _ in rows[1].iter do
 end
 
 -- =========================
--- 3. BUILD COLUMNS
+-- BUILD COLUMNS
 -- =========================
 
 local cols = Table.new()
 
-for i = 1, rows:len(), 1 do
+for i = 1, rows:len() do
     local row = rows[i]
 
-    for j = 1, #headers, 1 do
+    for j = 1, #headers do
         local col = headers[j]
 
         if not cols[col] then
@@ -131,27 +151,34 @@ for i = 1, rows:len(), 1 do
 end
 
 -- =========================
--- 4. TARGET
+-- TARGET
 -- =========================
 
 local target = cols["log_price"]
 if not target then
-    error("Falta columna log_price en dataset")
+    error("Falta columna log_price")
 end
 
 -- =========================
--- 5. FEATURE ENGINEERING SAFE FILTER
+-- FEATURE VALIDATION
 -- =========================
 
-local function count_valid(t)
-    local c = 0
-    for i = 1, t:len(), 1 do
-        if t[i] ~= nil and tonumber(t[i]) ~= nil then
-            c = c + 1
+local function valid_ratio(data)
+    local valid = 0
+    local total = data:len()
+
+    for i = 1, total do
+        if tonumber(data[i]) ~= nil then
+            valid = valid + 1
         end
     end
-    return c
+
+    return total > 0 and (valid / total) or 0
 end
+
+-- =========================
+-- MAIN PIPELINE (SINGLE PASS)
+-- =========================
 
 local stats = Table.new()
 local correlations = Table.new()
@@ -163,82 +190,29 @@ for _, col in ipairs(headers) do
         return tonumber(data[i])
     end, "tailcall")
 
-    local total = data:len()
-    local valid = count_valid(data)
-    local ratio = total > 0 and valid / total or 0
-
-    local variation = stddev(numeric)
+    local ratio = valid_ratio(data)
     local is_id = is_id_column(col)
     local is_target = (col == "log_price")
-    if is_target or (ratio > 0.6 and variation > 0 and not is_id) then
 
-        local min_v, max_v = minmax(numeric)
+    if is_target or (ratio > 0.3 and not is_id) then
+
+        local min_v, max_v = minmax(data)
 
         stats[col] = {
-            mean = mean(numeric),
-            median = 0,
-            std = variation,
+            mean = mean(data),
+            std = stddev(data),
             min = min_v,
             max = max_v
         }
 
         if not is_target then
-            correlations[col] = corr(target, numeric)
-        end
-    end
-end
-
-local function feature_is_valid(col, numeric, raw)
-    local valid = 0
-    local total = raw:len()
-
-    for i = 1, total, 1 do
-        if numeric[i] ~= nil then
-            valid = valid + 1
-        end
-    end
-
-    local ratio = valid / total
-    local variation = stddev(numeric)
-
-    if ratio < 0.6 then return false end
-    if variation <= 0 then return false end
-    if is_id_column(col) then return false end
-    if col == "log_price" then return true end
-
-    return true
-end
-
--- =========================
--- 6. STATS + CORR
--- =========================
-
-for _, col in ipairs(headers) do
-    local data = cols[col]
-
-    local numeric = Table.create(data:len(), function(i)
-        return tonumber(data[i])
-    end, "tailcall")
-
-    if feature_is_valid(col, numeric, data) then
-        local min_v, max_v = minmax(numeric)
-
-        stats[col] = {
-            mean = mean(numeric),
-            median = 0,
-            std = stddev(numeric),
-            min = min_v,
-            max = max_v
-        }
-
-        if col ~= "log_price" then
-            correlations[col] = corr(target, numeric)
+            correlations[col] = corr(target, data)
         end
     end
 end
 
 -- =========================
--- 7. OUTPUT JSON
+-- OUTPUT JSON
 -- =========================
 
 local out = File.new("data/stats.json", "w", true)
@@ -250,10 +224,11 @@ out:write(json.encode({
 }))
 
 -- =========================
--- 8. EXPORT CLEAN CSV
+-- EXPORT CSV (UNCHANGED SAFE)
 -- =========================
 
 local f = io.open("data/processed.csv", "w")
+
 f:write(table.concat(headers, ",") .. "\n")
 
 for i = 1, rows:len() do
@@ -269,4 +244,5 @@ for i = 1, rows:len() do
 end
 
 f:close()
+
 system.print("Pipeline completado correctamente")
