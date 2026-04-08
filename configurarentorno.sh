@@ -44,7 +44,7 @@ sudo apt-get update
 sudo apt-get install -y "${dependencies[@]}"
 
 if ! command -v luarocks &>/dev/null || ! luarocks --version | grep -q "$LUAROCKS_VERSION"; then
-    echo "Instalando LuaRocks $LUAROCKS_VERSION..."
+    echo "Instalando LuaRocks $LUAROCKS_VERSION. . ."
     cd /tmp
     wget -q https://luarocks.org/releases/luarocks-$LUAROCKS_VERSION.tar.gz
     tar zxpf luarocks-$LUAROCKS_VERSION.tar.gz
