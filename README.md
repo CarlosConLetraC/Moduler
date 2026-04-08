@@ -1,5 +1,5 @@
 # Moduler
-Es un sistema modular configurado en Lua. 
+Moduler es un motor de scripts multitenencia, útil para poder trabajar con varios "contenedores" ambientados en Lua.
 
 ## Sistemas compatibles:
   Debian 13 (Trixie)
