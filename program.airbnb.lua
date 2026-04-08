@@ -66,7 +66,6 @@ end
 --end, "tailcall")
 local target = {}
 for i = 1, #t.log_price, 1 do
-    print(i, #t.log_price)
     target[i] = tonumber(t.log_price[i]) or 0
 end
 Table.apply(target)

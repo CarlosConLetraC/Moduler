@@ -120,7 +120,7 @@ if [ ! -d "$VENV_PATH" ] || [ ! -f "$VENV_PATH/bin/activate" ]; then
     rm -rf "$VENV_PATH"
     python3 -m venv "$VENV_PATH"
     source "$BASE_PATH/entorno/bin/activate"
-    python -m pip install pymongo matplotlib pandas numpy scikit-learn umap-learn plotly dash
+    python -m pip install pymongo matplotlib pandas numpy scikit-learn umap-learn plotly dash seaborn
 fi
 
 echo "Instalacion completada."
