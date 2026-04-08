@@ -517,14 +517,21 @@ methods = {
 		return rawset(self, rawlen(self) + 1, v)
 	end,
 	len = function(self, nobypass)
+		local mt = gmt(self)
 		if nobypass then
-			local mt = gmt(self)
 			if mt and rawget(mt, "__len") then
 				return mt.__len(self)
 			end
 		end
 
-		return select("#", unpack(self))
+		local status, received = pcall(function() return select("#", unpack(self)) end)
+		if not status then
+			local __len = mt.__len
+			mt.__len = nil
+			local size = rawlen(self)
+			mt.__len = __len
+			return size
+		end
 	end,
 	pop = function(self, limit, ignore)
 		limit = (type(limit) == "number" and limit) or tonumber(limit) or tonumber(limit, 16) or rawlen(self)
@@ -692,9 +699,7 @@ TableMT = {
 		if index == "iteri" then
 			return function(_, i)
 				i = (i or 0) + 1
-				if self[i] ~= nil then
-					return i, self[i]
-				end
+				if self[i] ~= nil then return i, self[i] end
 			end
 		end
 

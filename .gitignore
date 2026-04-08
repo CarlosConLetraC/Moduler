@@ -1,6 +1,6 @@
 *.class
+*.log
 data/*.csv
 entorno/
 build/
 .vscode/
-*.log

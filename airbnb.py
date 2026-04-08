@@ -1,12 +1,15 @@
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-df = pd.read_csv("data/train.csv")
+os.system("mkdir -p plots")
+df = pd.read_csv("data/processed.csv")
 numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
 if "log_price" in numeric_cols: numeric_cols.remove("log_price")
 
+print("Generando histogramas. . .")
 for col in numeric_cols + ["log_price"]:
     plt.figure(figsize=(6, 4))
     sns.histplot(df[col].dropna(), bins=30, kde=True)
@@ -15,8 +18,10 @@ for col in numeric_cols + ["log_price"]:
     plt.ylabel("Frecuencia")
     plt.tight_layout()
     plt.savefig(f"plots/hist_{col}.png")
+    print(f"plots/hist_{col}.png guardado. . .")
     plt.close()
 
+print("\nGenerando boxes. . .")
 for col in numeric_cols + ["log_price"]:
     plt.figure(figsize=(6, 4))
     sns.boxplot(x=df[col].dropna())
@@ -24,8 +29,10 @@ for col in numeric_cols + ["log_price"]:
     plt.xlabel(col)
     plt.tight_layout()
     plt.savefig(f"plots/box_{col}.png")
+    print(f"plots/box_{col}.png guardado. . .")
     plt.close()
 
+print("\nGenerando scatters. . .")
 for col in numeric_cols:
     plt.figure(figsize=(6, 4))
     sns.scatterplot(x=df[col], y=df["log_price"])
@@ -34,6 +41,7 @@ for col in numeric_cols:
     plt.ylabel("log_price")
     plt.tight_layout()
     plt.savefig(f"plots/scatter_{col}_log_price.png")
+    print(f"plots/scatter_{col}_log_price.png guardado. . .")
     plt.close()
 
 plt.figure(figsize=(12, 10))
