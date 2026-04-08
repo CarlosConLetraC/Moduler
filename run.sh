@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
+ls entorno/ > /dev/null 2>&1
+ENTORNO_DEFINIDO=$?
+
+command -v java > /dev/null 2>&1
+JAVA_INSTALADO=$?
+
 set -e
 
-if ! command -v java &> /dev/null; then
+if [ "$JAVA_INSTALADO" -ne 0 ]; then
     ./build.sh
 fi
 
@@ -27,6 +33,11 @@ if ! pgrep -x "mongod" > /dev/null; then
     mongod --dbpath ~/mongodb-data > mongo.log 2>&1 &
     sleep 3
 fi
+
+if [ "$ENTORNO_DEFINIDO" -ne 0 ]; then
+    echo "Entorno virtual de python no encontrado. . ."
+    ./configurarentorno.sh
+fi 
 
 java backend
 source $PWD/entorno/bin/activate
