@@ -1,9 +1,5 @@
 import("Table", "system", "csv", "File", "json")
 
-local function safe_number(v)
-    return tonumber(v)
-end
-
 local function mean(t)
     local s, n = 0, 0
 
