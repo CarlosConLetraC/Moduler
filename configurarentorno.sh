@@ -109,7 +109,7 @@ if [ "$JAVA_INSTALADO" -ne 0 ]; then
 	if [ -n "$JAVA_PATH" ]; then
 		sudo update-alternatives --set java "$JAVA_PATH"
 	else
-		echo "[WARN] No se pudo configurar JDK 25 automáticamente"
+		echo "[WARN] No se pudo configurar JDK 25 automaticamente"
 	fi
 fi
 
