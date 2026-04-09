@@ -1,9 +1,5 @@
 import("Table", "system", "csv", "File", "json")
 
--- =========================
--- SAFE NUMERIC UTILITIES
--- =========================
-
 local function safe_number(v)
     return tonumber(v)
 end
@@ -55,10 +51,6 @@ local function minmax(t)
     return min_v, max_v
 end
 
--- =========================
--- CORRELATION (SAFE ALIGNMENT)
--- =========================
-
 local function corr(x, y)
     local xs, ys = {}
 
@@ -103,17 +95,9 @@ local function corr(x, y)
     return num / denom
 end
 
--- =========================
--- ID DETECTOR
--- =========================
-
 local function is_id_column(name)
     return string.find(name:lower(), "id") ~= nil
 end
-
--- =========================
--- LOAD DATA
--- =========================
 
 local rows = csv.read("data/train.csv")
 
@@ -121,25 +105,17 @@ if not rows or rows:len() == 0 then
     error("CSV vacío o inválido")
 end
 
--- =========================
--- HEADERS
--- =========================
-
 local headers = {}
 for k, _ in rows[1].iter do
     table.insert(headers, k)
 end
 
--- =========================
--- BUILD COLUMNS
--- =========================
-
 local cols = Table.new()
 
-for i = 1, rows:len() do
+for i = 1, rows:len(), 1 do
     local row = rows[i]
 
-    for j = 1, #headers do
+    for j = 1, #headers, 1 do
         local col = headers[j]
 
         if not cols[col] then
@@ -150,18 +126,10 @@ for i = 1, rows:len() do
     end
 end
 
--- =========================
--- TARGET
--- =========================
-
 local target = cols["log_price"]
 if not target then
-    error("Falta columna log_price")
+    error("Falta columna log_price", 3)
 end
-
--- =========================
--- FEATURE VALIDATION
--- =========================
 
 local function valid_ratio(data)
     local valid = 0
@@ -175,10 +143,6 @@ local function valid_ratio(data)
 
     return total > 0 and (valid / total) or 0
 end
-
--- =========================
--- MAIN PIPELINE (SINGLE PASS)
--- =========================
 
 local stats = Table.new()
 local correlations = Table.new()
@@ -195,7 +159,6 @@ for _, col in ipairs(headers) do
     local is_target = (col == "log_price")
 
     if is_target or (ratio > 0.3 and not is_id) then
-
         local min_v, max_v = minmax(data)
 
         stats[col] = {
@@ -211,21 +174,12 @@ for _, col in ipairs(headers) do
     end
 end
 
--- =========================
--- OUTPUT JSON
--- =========================
-
 local out = File.new("data/stats.json", "w", true)
 out:clear()
-
 out:write(json.encode({
     stats = stats,
     correlations = correlations
 }))
-
--- =========================
--- EXPORT CSV (UNCHANGED SAFE)
--- =========================
 
 local f = io.open("data/processed.csv", "w")
 f:write(table.concat(headers, ",") .. "\n")
