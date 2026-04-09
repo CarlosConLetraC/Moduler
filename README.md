@@ -46,5 +46,19 @@ Cada programa Lua se ejecuta en un entorno aislado con:
 git clone --recursive https://github.com/CarlosConLetraC/Moduler.git
 cd Moduler
 chmod +x *.sh
+```
+
+## Configurar
+```bash
+./configurarentorno.sh
+```
+
+## Compilar
+```bash
+./build.sh
+```
+
+## Ejecutar
+```
 ./run.sh
 ```
