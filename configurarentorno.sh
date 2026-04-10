@@ -28,7 +28,7 @@ dependencies=(
 	luajit wget curl make cmake gfortran gcc g++ build-essential pkg-config
 	libssl-dev zlib1g-dev ca-certificates git
 	libproj-dev libgeos-dev libgdal-dev
-	libblas-dev liblapack-dev
+	libblas-dev liblapack-dev systemctl
 	libwebp-dev protobuf-compiler libprotobuf-dev
 	libluajit-5.1-dev libssh2-1-dev
 	librsvg2-dev libcurl4-openssl-dev libxml2-dev
