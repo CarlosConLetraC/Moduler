@@ -116,67 +116,67 @@ fi
 java -version || true
 
 if [ "$MONGOD_INSTALADO" -ne 0 ]; then
-    echo "[INFO] Instalando MongoDB. . ."
+	echo "[INFO] Instalando MongoDB. . ."
 
-    MONGODB_GPG_VERSION="8.0"
-    MONGODB_REPO_VERSION="8.2"
-    KEYRING="/usr/share/keyrings/mongodb-server.gpg"
-    LIST_FILE="/etc/apt/sources.list.d/mongodb-org.list"
+	MONGODB_GPG_VERSION="8.0"
+	MONGODB_REPO_VERSION="8.2"
+	KEYRING="/usr/share/keyrings/mongodb-server.gpg"
+	LIST_FILE="/etc/apt/sources.list.d/mongodb-org.list"
 
-    MONGO_DIST="$CODENAME"
+	MONGO_DIST="$CODENAME"
 
-    if [ "$OS" = "debian" ]; then
-        case "$CODENAME" in
-            trixie|bookworm)
-                MONGO_DIST="bookworm"
-                ;;
-            *)
-                MONGO_DIST="$CODENAME"
-                ;;
-        esac
-    elif [ "$OS" = "ubuntu" ]; then
-        case "$CODENAME" in
-            jammy|kinetic)
-                MONGO_DIST="jammy"
-                ;;
-            *)
-                MONGO_DIST="$CODENAME"
-                ;;
-        esac
-    fi
+	if [ "$OS" = "debian" ]; then
+		case "$CODENAME" in
+			trixie|bookworm)
+				MONGO_DIST="bookworm"
+				;;
+			*)
+				MONGO_DIST="$CODENAME"
+				;;
+		esac
+	elif [ "$OS" = "ubuntu" ]; then
+		case "$CODENAME" in
+			jammy|kinetic)
+				MONGO_DIST="jammy"
+				;;
+			*)
+				MONGO_DIST="$CODENAME"
+				;;
+		esac
+	fi
 
-    sudo rm -f "$KEYRING"
+	sudo rm -f "$KEYRING"
 
-    echo "[INFO] Descargando clave GPG MongoDB. . ."
-    curl -fsSL "https://pgp.mongodb.com/server-${MONGODB_GPG_VERSION}.asc" | \
-        sudo gpg --dearmor -o "$KEYRING"
+	echo "[INFO] Descargando clave GPG MongoDB. . ."
+	curl -fsSL "https://pgp.mongodb.com/server-${MONGODB_GPG_VERSION}.asc" | \
+		sudo gpg --dearmor -o "$KEYRING"
 
-    sudo chmod 644 "$KEYRING"
+	sudo chmod 644 "$KEYRING"
 
-    sudo rm -f "$LIST_FILE"
+	sudo rm -f "$LIST_FILE"
 
-    if [ "$OS" = "debian" ]; then
-        REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/debian ${MONGO_DIST}/mongodb-org/${MONGODB_REPO_VERSION} main"
-    else
-        REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/ubuntu ${MONGO_DIST}/mongodb-org/${MONGODB_REPO_VERSION} multiverse"
-    fi
+	if [ "$OS" = "debian" ]; then
+		REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/debian ${MONGO_DIST}/mongodb-org/${MONGODB_REPO_VERSION} main"
+	else
+		REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/ubuntu ${MONGO_DIST}/mongodb-org/${MONGODB_REPO_VERSION} multiverse"
+	fi
 
-    echo "[INFO] Agregando repositorio MongoDB. . ."
-    echo "$REPO_LINE" | sudo tee "$LIST_FILE" > /dev/null
+	echo "[INFO] Agregando repositorio MongoDB. . ."
+	echo "$REPO_LINE" | sudo tee "$LIST_FILE" > /dev/null
 
-    sudo apt-get update
+	sudo apt-get update
 
-    echo "[INFO] Instalando paquetes MongoDB. . ."
-    sudo apt-get install -y mongodb-org mongodb-mongosh
+	echo "[INFO] Instalando paquetes MongoDB. . ."
+	sudo apt-get install -y mongodb-org mongodb-mongosh
 
-    if command -v systemctl &>/dev/null; then
-        sudo systemctl daemon-reexec || true
-        sudo systemctl enable mongod
-        sudo systemctl restart mongod
-    fi
+	if command -v systemctl &>/dev/null; then
+		sudo systemctl daemon-reexec || true
+		sudo systemctl enable mongod
+		sudo systemctl restart mongod
+	fi
 
-    echo "[INFO] Version instalada:"
-    mongod --version | head -n1
+	echo "[INFO] Version instalada:"
+	mongod --version | head -n1
 fi
 
 echo "[INFO] Configurando entorno Python. . ."
@@ -185,6 +185,9 @@ VENV_PATH="$BASE_PATH/entorno"
 if [ ! -d "$VENV_PATH" ]; then
 	echo "[INFO] Creando entorno virtual. . ."
 	python3 -m venv "$VENV_PATH"
+
+	echo "[INFO] Instalando pip en el entorno. . ."
+	"$VENV_PATH/bin/python" -m ensurepip --upgrade
 fi
 
 "$VENV_PATH/bin/python" -m pip install --upgrade pip setuptools wheel
