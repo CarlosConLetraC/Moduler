@@ -109,7 +109,7 @@ if [ "$JAVA_INSTALADO" -ne 0 ]; then
 	if [ -n "$JAVA_PATH" ]; then
 		sudo update-alternatives --set java "$JAVA_PATH"
 	else
-		echo "[WARN] No se pudo configurar JDK 25 automaticamente"
+		echo "[WARN] No se pudo configurar JDK 25 automáticamente"
 	fi
 fi
 
@@ -118,13 +118,16 @@ java -version || true
 if [ "$MONGOD_INSTALADO" -ne 0 ]; then
     echo "[INFO] Instalando MongoDB. . ."
 
-    MONGODB_VERSION="8.2"
+    MONGODB_GPG_VERSION="8.0"
+    MONGODB_REPO_VERSION="8.2"
     KEYRING="/usr/share/keyrings/mongodb-server.gpg"
+    LIST_FILE="/etc/apt/sources.list.d/mongodb-org.list"
+
     MONGO_DIST="$CODENAME"
 
     if [ "$OS" = "debian" ]; then
         case "$CODENAME" in
-            bookworm|trixie)
+            trixie|bookworm)
                 MONGO_DIST="bookworm"
                 ;;
             *)
@@ -142,29 +145,37 @@ if [ "$MONGOD_INSTALADO" -ne 0 ]; then
         esac
     fi
 
-    if [ ! -f "$KEYRING" ]; then
-        curl -fsSL https://pgp.mongodb.com/server-${MONGODB_VERSION}.asc | \
-            sudo gpg --dearmor -o "$KEYRING"
-    fi
+    sudo rm -f "$KEYRING"
+
+    echo "[INFO] Descargando clave GPG MongoDB. . ."
+    curl -fsSL "https://pgp.mongodb.com/server-${MONGODB_GPG_VERSION}.asc" | \
+        sudo gpg --dearmor -o "$KEYRING"
+
+    sudo chmod 644 "$KEYRING"
+
+    sudo rm -f "$LIST_FILE"
 
     if [ "$OS" = "debian" ]; then
-        REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/debian ${MONGO_DIST}/mongodb-org/${MONGODB_VERSION} main"
+        REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/debian ${MONGO_DIST}/mongodb-org/${MONGODB_REPO_VERSION} main"
     else
-        REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/ubuntu ${MONGO_DIST}/mongodb-org/${MONGODB_VERSION} multiverse"
+        REPO_LINE="deb [ signed-by=$KEYRING arch=amd64 ] https://repo.mongodb.org/apt/ubuntu ${MONGO_DIST}/mongodb-org/${MONGODB_REPO_VERSION} multiverse"
     fi
 
-    if [ ! -f /etc/apt/sources.list.d/mongodb-org.list ]; then
-        echo "$REPO_LINE" | sudo tee /etc/apt/sources.list.d/mongodb-org.list > /dev/null
-    fi
+    echo "[INFO] Agregando repositorio MongoDB. . ."
+    echo "$REPO_LINE" | sudo tee "$LIST_FILE" > /dev/null
 
     sudo apt-get update
+
+    echo "[INFO] Instalando paquetes MongoDB. . ."
     sudo apt-get install -y mongodb-org mongodb-mongosh
 
     if command -v systemctl &>/dev/null; then
+        sudo systemctl daemon-reexec || true
         sudo systemctl enable mongod
-        sudo systemctl start mongod
+        sudo systemctl restart mongod
     fi
 
+    echo "[INFO] Version instalada:"
     mongod --version | head -n1
 fi
 
