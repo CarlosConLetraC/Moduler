@@ -183,7 +183,6 @@ echo "[INFO] Configurando entorno Python. . ."
 VENV_PATH="$BASE_PATH/entorno"
 
 if [ ! -d "$VENV_PATH" ]; then
-<<<<<<< HEAD
 	echo "[INFO] Creando entorno virtual..."
 	python3 -m venv "$VENV_PATH"
 fi
@@ -200,7 +199,6 @@ echo "[INFO] Instalando dependencias Python..."
 	umap-learn plotly dash seaborn
 
 echo "[INFO] Instalacion completada correctamente."
-=======
 	echo "[INFO] Creando entorno virtual. . ."
 	python3 -m venv "$VENV_PATH"
 
@@ -212,4 +210,3 @@ fi
 "$VENV_PATH/bin/pip" install pymongo matplotlib pandas numpy scikit-learn umap-learn plotly dash seaborn
 
 echo "[INFO] Instalacion completada correctamente."
->>>>>>> 5d6556d7aed047c86b6edece42253bc4c9f47b6f
