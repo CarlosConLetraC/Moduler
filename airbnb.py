@@ -9,7 +9,11 @@ os.system("mkdir -p plots")
 df = pd.read_csv("data/processed.csv", on_bad_lines='skip')
 df = df.apply(pd.to_numeric, errors="coerce")
 df = df.dropna(axis=1, how="all")
+<<<<<<< HEAD
 df.rename(columns=lambda x: x.strip(), inplace=True)# elimina espacios alrededor
+=======
+df.rename(columns=lambda x: x.strip(), inplace=True)  # elimina espacios alrededor
+>>>>>>> 5d6556d7aed047c86b6edece42253bc4c9f47b6f
 def is_useful(col): return col.notna().sum() > 50 and col.nunique() > 1
 
 numeric_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col]) and is_useful(df[col])]
