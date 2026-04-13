@@ -294,8 +294,4 @@ for _, c in ipairs(numeric_cols) do
 end
 
 print("Columnas importantes:", table.concat(important_cols, ", "))
-<<<<<<< HEAD
 ]]
-=======
-]]
->>>>>>> 5d6556d7aed047c86b6edece42253bc4c9f47b6f
