@@ -81,7 +81,7 @@ if [ ! -f "$BASE_PATH/import/Linux/ssh.so" ]; then
 	echo "[INFO] Compilando lua-ssh. . ."
 
 	cd /tmp
-	rm -rf lua-ssh
+	rm -rf /tmp/lua-ssh
 	git clone https://github.com/esno/lua-ssh.git
 	cd lua-ssh/src
 
