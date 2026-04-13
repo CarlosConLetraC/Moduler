@@ -195,16 +195,16 @@ echo "[INFO] Actualizando herramientas base..."
 
 echo "[INFO] Instalando dependencias Python..."
 "$VENV_PATH/bin/python" -m pip install \
-	pymongo matplotlib pandas numpy scikit-learn \
-	umap-learn plotly dash seaborn
+pymongo matplotlib pandas numpy scikit-learn \
+umap-learn plotly dash seaborn
 
 echo "[INFO] Instalacion completada correctamente."
-	echo "[INFO] Creando entorno virtual. . ."
-	python3 -m venv "$VENV_PATH"
+echo "[INFO] Creando entorno virtual. . ."
+python3 -m venv "$VENV_PATH"
 
-	echo "[INFO] Instalando pip en el entorno. . ."
-	"$VENV_PATH/bin/python" -m ensurepip --upgrade
-fi
+echo "[INFO] Instalando pip en el entorno. . ."
+"$VENV_PATH/bin/python" -m ensurepip --upgrade
+
 
 "$VENV_PATH/bin/python" -m pip install --upgrade pip setuptools wheel
 "$VENV_PATH/bin/pip" install pymongo matplotlib pandas numpy scikit-learn umap-learn plotly dash seaborn
