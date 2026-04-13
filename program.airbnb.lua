@@ -1,17 +1,9 @@
 import("Table", "system", "csv", "File", "json")
 
--- =========================
--- SAFE NUMERIC UTILITIES
--- =========================
-
-local function safe_number(v)
-    return tonumber(v)
-end
-
 local function mean(t)
     local s, n = 0, 0
 
-    for i = 1, t:len() do
+    for i = 1, t:len(), 1 do
         local v = tonumber(t[i])
         if v ~= nil then
             s = s + v
@@ -26,7 +18,7 @@ local function stddev(t)
     local m = mean(t)
     local s, n = 0, 0
 
-    for i = 1, t:len() do
+    for i = 1, t:len(), 1 do
         local v = tonumber(t[i])
         if v ~= nil then
             s = s + (v - m) ^ 2
@@ -40,7 +32,7 @@ end
 local function minmax(t)
     local min_v, max_v = nil, nil
 
-    for i = 1, t:len() do
+    for i = 1, t:len(), 1 do
         local v = tonumber(t[i])
         if v ~= nil then
             if not min_v then
@@ -55,16 +47,12 @@ local function minmax(t)
     return min_v, max_v
 end
 
--- =========================
--- CORRELATION (SAFE ALIGNMENT)
--- =========================
-
 local function corr(x, y)
     local xs, ys = {}
 
     local n = math.min(x:len(), y:len())
 
-    for i = 1, n do
+    for i = 1, n, 1 do
         local vx = tonumber(x[i])
         local vy = tonumber(y[i])
 
@@ -79,7 +67,7 @@ local function corr(x, y)
 
     local mx, my = 0, 0
 
-    for i = 1, m do
+    for i = 1, m, 1 do
         mx = mx + xs[i]
         my = my + ys[i]
     end
@@ -88,7 +76,7 @@ local function corr(x, y)
 
     local num, dx, dy = 0, 0, 0
 
-    for i = 1, m do
+    for i = 1, m, 1 do
         local dxv = xs[i] - mx
         local dyv = ys[i] - my
 
@@ -103,17 +91,9 @@ local function corr(x, y)
     return num / denom
 end
 
--- =========================
--- ID DETECTOR
--- =========================
-
 local function is_id_column(name)
     return string.find(name:lower(), "id") ~= nil
 end
-
--- =========================
--- LOAD DATA
--- =========================
 
 local rows = csv.read("data/train.csv")
 
@@ -121,25 +101,17 @@ if not rows or rows:len() == 0 then
     error("CSV vacío o inválido")
 end
 
--- =========================
--- HEADERS
--- =========================
-
 local headers = {}
 for k, _ in rows[1].iter do
     table.insert(headers, k)
 end
 
--- =========================
--- BUILD COLUMNS
--- =========================
-
 local cols = Table.new()
 
-for i = 1, rows:len() do
+for i = 1, rows:len(), 1 do
     local row = rows[i]
 
-    for j = 1, #headers do
+    for j = 1, #headers, 1 do
         local col = headers[j]
 
         if not cols[col] then
@@ -150,24 +122,16 @@ for i = 1, rows:len() do
     end
 end
 
--- =========================
--- TARGET
--- =========================
-
 local target = cols["log_price"]
 if not target then
-    error("Falta columna log_price")
+    error("Falta columna log_price", 3)
 end
-
--- =========================
--- FEATURE VALIDATION
--- =========================
 
 local function valid_ratio(data)
     local valid = 0
     local total = data:len()
 
-    for i = 1, total do
+    for i = 1, total, 1 do
         if tonumber(data[i]) ~= nil then
             valid = valid + 1
         end
@@ -175,10 +139,6 @@ local function valid_ratio(data)
 
     return total > 0 and (valid / total) or 0
 end
-
--- =========================
--- MAIN PIPELINE (SINGLE PASS)
--- =========================
 
 local stats = Table.new()
 local correlations = Table.new()
@@ -195,7 +155,6 @@ for _, col in ipairs(headers) do
     local is_target = (col == "log_price")
 
     if is_target or (ratio > 0.3 and not is_id) then
-
         local min_v, max_v = minmax(data)
 
         stats[col] = {
@@ -211,26 +170,17 @@ for _, col in ipairs(headers) do
     end
 end
 
--- =========================
--- OUTPUT JSON
--- =========================
-
 local out = File.new("data/stats.json", "w", true)
 out:clear()
-
 out:write(json.encode({
     stats = stats,
     correlations = correlations
 }))
 
--- =========================
--- EXPORT CSV (UNCHANGED SAFE)
--- =========================
-
 local f = io.open("data/processed.csv", "w")
 f:write(table.concat(headers, ",") .. "\n")
 
-for i = 1, rows:len() do
+for i = 1, rows:len(), 1 do
     local line = {}
 
     for _, col in ipairs(headers) do
@@ -244,3 +194,104 @@ end
 
 f:close()
 system.print("Pipeline completado correctamente")
+--[[
+local csv = require("csv")
+local Table = require("Table")
+
+local rows = csv.read("data/processed.csv")
+local headers = {}
+if #rows > 0 then
+    for h, _ in pairs(rows[1]) do
+        table.insert(headers, h)
+    end
+end
+
+local useful_headers = {}
+for _, h in ipairs(headers) do
+    local non_nil_count = 0
+    for _, row in ipairs(rows) do
+        if row[h] ~= nil then non_nil_count = non_nil_count + 1 end
+    end
+    if non_nil_count > 0 then
+        table.insert(useful_headers, h)
+    end
+end
+
+local function is_useful_col(col)
+    local values = {}
+    for _, row in ipairs(rows) do
+        local v = row[col]
+        if v ~= nil then
+            values[v] = true
+        end
+    end
+    local non_nil_count = 0
+    for _, row in ipairs(rows) do
+        if row[col] ~= nil then non_nil_count = non_nil_count + 1 end
+    end
+    return non_nil_count > 50 and table.getn(values) > 1
+end
+
+local numeric_cols = {}
+for _, h in ipairs(useful_headers) do
+    local all_numeric = true
+    for _, row in ipairs(rows) do
+        local v = row[h]
+        if v ~= nil and type(v) ~= "number" then
+            all_numeric = false
+            break
+        end
+    end
+    if all_numeric and is_useful_col(h) then
+        table.insert(numeric_cols, h)
+    end
+end
+
+local log_price_exists = false
+for _, h in ipairs(numeric_cols) do
+    if h == "log_price" then log_price_exists = true end
+end
+if not log_price_exists then
+    error("log_price no existe en el dataset")
+end
+
+local function pearson_corr(col1, col2)
+    local mean1, mean2, n = 0, 0, 0
+    for _, row in ipairs(rows) do
+        local x, y = row[col1], row[col2]
+        if x and y then
+            mean1 = mean1 + x
+            mean2 = mean2 + y
+            n = n + 1
+        end
+    end
+    if n == 0 then return 0 end
+    mean1 = mean1 / n
+    mean2 = mean2 / n
+
+    local num, den1, den2 = 0, 0, 0
+    for _, row in ipairs(rows) do
+        local x, y = row[col1], row[col2]
+        if x and y then
+            local dx, dy = x - mean1, y - mean2
+            num = num + dx*dy
+            den1 = den1 + dx*dx
+            den2 = den2 + dy*dy
+        end
+    end
+    if den1 == 0 or den2 == 0 then return 0 end
+    return num / math.sqrt(den1*den2)
+end
+
+local important_cols = {}
+for _, c in ipairs(numeric_cols) do
+    if c ~= "log_price" then
+        local r = pearson_corr(c, "log_price")
+        if math.abs(r) > 0.1 then
+            table.insert(important_cols, c)
+        end
+    end
+end
+
+print("Columnas importantes:", table.concat(important_cols, ", "))
+]]
